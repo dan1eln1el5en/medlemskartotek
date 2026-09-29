@@ -2,7 +2,7 @@
 /*
 Plugin Name: Members Manager – Summer‑House Edition (Owner‑Private‑Address)
 Description: Tracks summer‑houses (unique property names) and their owners. Includes a searchable member list with e‑mail copy and Excel export.
-Version: 1.9
+Version: 1.10
 Author: Daniel (with Lumo help)
 Text Domain: am
 Domain Path: /languages
@@ -602,7 +602,7 @@ function am_members_assets( $hook ) {
     if ( 'toplevel_page_am_members' !== $hook ) { return; }
 
     $url = plugin_dir_url( __FILE__ ) . 'assets/';
-    $ver = '1.9';
+    $ver = '1.10';
     wp_enqueue_style( 'am-members', $url . 'members-list.css', [], $ver );
     wp_enqueue_script( 'am-members', $url . 'members-list.js', [], $ver, true );
 

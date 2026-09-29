@@ -20,6 +20,7 @@ ROADS = {            # grund prefix -> road name
     "SV": "Svanevænget",
     "KT": "Kysttoften",
     "KV": "Kystvej",
+    "KS": "Kystsvinget",
     "SS": "Svanestien",
 }
 CONTEXT_MARGIN = 60  # metres of neighbouring plots/roads drawn around the area
