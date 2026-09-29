@@ -19,6 +19,8 @@ POSTNR = "3630"
 ROADS = {            # grund prefix -> road name
     "SV": "Svanevænget",
     "KT": "Kysttoften",
+    "KV": "Kystvej",
+    "SS": "Svanestien",
 }
 CONTEXT_MARGIN = 60  # metres of neighbouring plots/roads drawn around the area
 SRID = "25832"       # UTM 32N: metres, so the map is to scale

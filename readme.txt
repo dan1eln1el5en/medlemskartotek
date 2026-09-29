@@ -1,6 +1,6 @@
 === Stenøgård Medlems Manager ===
 Contributors: daniel
-Version: 1.8
+Version: 1.9
 License: GPLv2 or later
 Description: Admin interface for grunde (properties) and grundejere (owners) in grundejerforeningen Stenøgård.
 Custom plugin skrevet af Daniel L. Nielsen for grundejerforeningen Stenøgård
@@ -21,11 +21,15 @@ medlemskartotek.php, commit and push to main. The update then shows under Plugin
 
 == Map ==
 The "Kort" view draws the plots from the official cadastre (Matriklen, via Dataforsyningen).
-A grund named "SV7" is matched to Svanevænget 7, "KT3" to Kysttoften 3.
+A grund named "SV7" is matched to Svanevænget 7 (SV = Svanevænget, KT = Kysttoften,
+KV = Kystvej, SS = Svanestien).
 To add roads, edit ROADS in tools/build-map.py and run:  python3 tools/build-map.py
 The map data (assets/map-data.json) holds only public cadastral data, no member data.
 
 == Changelog ==
+= 1.9 =
+* Map now includes Kystvej (KV) and Svanestien (SS).
+
 = 1.8 =
 * New "Kort" (map) view: hover a plot to see owner, e-mail and phone; click to open the owner.
 * Search highlights matching plots on the map.
