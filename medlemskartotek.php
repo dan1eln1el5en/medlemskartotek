@@ -2,7 +2,7 @@
 /*
 Plugin Name: Members Manager – Summer‑House Edition (Owner‑Private‑Address)
 Description: Tracks summer‑houses (unique property names) and their owners. Includes a searchable member list with e‑mail copy and Excel export.
-Version: 1.6
+Version: 1.7
 Author: Daniel (with Lumo help)
 Text Domain: am
 Domain Path: /languages
@@ -43,8 +43,7 @@ function am_register_property_cpt() {
         'show_ui'       => true,
         'capability_type'=> 'post',
         'supports'      => [ 'title' ],
-        'menu_position' => 20,
-        'menu_icon'     => 'dashicons-admin-home',
+        'show_in_menu'  => false, // lives under the Member List menu
     ];
     register_post_type( 'am_property', $args );
 }
@@ -68,8 +67,7 @@ function am_register_person_cpt() {
         'show_ui'       => true,
         'capability_type'=> 'post',
         'supports'      => [ 'title' ],
-        'menu_position' => 21,
-        'menu_icon'     => 'dashicons-id-alt',
+        'show_in_menu'  => false, // lives under the Member List menu
     ];
     register_post_type( 'am_person', $args );
 }
@@ -384,20 +382,8 @@ add_action( 'pre_get_posts', 'am_default_admin_order' );
 
 
 /* --------------------------------------------------------------
-   5️⃣ CSV IMPORT
+   5️⃣ CSV IMPORT (menu entry registered in am_members_menu)
 -------------------------------------------------------------- */
-function am_import_menu() {
-    add_submenu_page(
-        'edit.php?post_type=am_property',
-        __( 'Import CSV', 'am' ),
-        __( 'Import CSV', 'am' ),
-        'manage_options',
-        'am_import_csv',
-        'am_render_import_page'
-    );
-}
-add_action( 'admin_menu', 'am_import_menu' );
-
 function am_render_import_page() {
     ?>
     <div class="wrap">
@@ -548,6 +534,9 @@ function am_process_csv( $filepath ) {
       with "copy e‑mails" and Excel (CSV) download of what's shown.
       Rendering happens in assets/members-list.js.
 -------------------------------------------------------------- */
+define( 'AM_OWNER_VIEW_SLUG', 'admin.php?page=am_members&view=owner' );
+
+/* One menu for everything: Properties / Owners both open the member list. */
 function am_members_menu() {
     add_menu_page(
         __( 'Member List', 'am' ),
@@ -558,20 +547,70 @@ function am_members_menu() {
         'dashicons-groups',
         19
     );
+    add_submenu_page( 'am_members', __( 'Member List', 'am' ), __( 'Properties', 'am' ), 'manage_options', 'am_members', 'am_render_members_page' );
+    add_submenu_page( 'am_members', __( 'Owners', 'am' ), __( 'Owners', 'am' ), 'manage_options', AM_OWNER_VIEW_SLUG );
+    add_submenu_page( 'am_members', __( 'Add New Property', 'am' ), __( 'Add New Property', 'am' ), 'manage_options', 'post-new.php?post_type=am_property' );
+    add_submenu_page( 'am_members', __( 'Add New Owner', 'am' ), __( 'Add New Owner', 'am' ), 'manage_options', 'post-new.php?post_type=am_person' );
+    add_submenu_page( 'am_members', __( 'Import CSV', 'am' ), __( 'Import CSV', 'am' ), 'manage_options', 'am_import_csv', 'am_render_import_page' );
 }
 add_action( 'admin_menu', 'am_members_menu' );
+
+/* The old list screens redirect to the member list (the trash view stays reachable). */
+function am_redirect_list_screens() {
+    global $typenow;
+    if ( ! in_array( $typenow, [ 'am_property', 'am_person' ], true ) ) { return; }
+    if ( isset( $_REQUEST['post_status'] ) ) { return; }
+
+    $args = [ 'page' => 'am_members', 'view' => 'am_person' === $typenow ? 'owner' : 'property' ];
+    if ( isset( $_GET['trashed'] ) ) {
+        $args['trashed'] = absint( $_GET['trashed'] );
+    }
+    wp_safe_redirect( add_query_arg( $args, admin_url( 'admin.php' ) ) );
+    exit;
+}
+add_action( 'load-edit.php', 'am_redirect_list_screens' );
+
+/* Keep the Member List menu open and the right item highlighted on edit screens. */
+function am_menu_parent( $parent_file ) {
+    global $typenow;
+    return in_array( $typenow, [ 'am_property', 'am_person' ], true ) ? 'am_members' : $parent_file;
+}
+add_filter( 'parent_file', 'am_menu_parent' );
+
+function am_menu_submenu( $submenu_file ) {
+    global $typenow, $pagenow, $plugin_page;
+    if ( 'am_members' === $plugin_page ) {
+        return ( $_GET['view'] ?? '' ) === 'owner' ? AM_OWNER_VIEW_SLUG : 'am_members';
+    }
+    if ( ! in_array( $typenow, [ 'am_property', 'am_person' ], true ) ) { return $submenu_file; }
+    if ( 'post-new.php' === $pagenow ) {
+        return 'post-new.php?post_type=' . $typenow;
+    }
+    return 'am_person' === $typenow ? AM_OWNER_VIEW_SLUG : 'am_members';
+}
+add_filter( 'submenu_file', 'am_menu_submenu' );
+
+/* "Back to member list" link on the edit screens. */
+function am_edit_screen_back_link( $post ) {
+    if ( ! in_array( $post->post_type, [ 'am_property', 'am_person' ], true ) ) { return; }
+    $url = admin_url( 'am_person' === $post->post_type ? AM_OWNER_VIEW_SLUG : 'admin.php?page=am_members&view=property' );
+    echo '<p class="am-back"><a href="' . esc_url( $url ) . '">' . esc_html__( '← Back to member list', 'am' ) . '</a></p>';
+}
+add_action( 'edit_form_top', 'am_edit_screen_back_link' );
 
 function am_members_assets( $hook ) {
     if ( 'toplevel_page_am_members' !== $hook ) { return; }
 
     $url = plugin_dir_url( __FILE__ ) . 'assets/';
-    $ver = '1.6';
+    $ver = '1.7';
     wp_enqueue_style( 'am-members', $url . 'members-list.css', [], $ver );
     wp_enqueue_script( 'am-members', $url . 'members-list.js', [], $ver, true );
 
+    $view = sanitize_key( $_GET['view'] ?? '' );
     $data = [
         'owners'     => array_values( am_get_owners() ),
         'properties' => am_get_properties(),
+        'view'       => in_array( $view, [ 'property', 'owner' ], true ) ? $view : '',
         'editUrl'    => admin_url( 'post.php?action=edit&post=' ),
         'i18n'       => [
             'property'        => __( 'Property', 'am' ),
@@ -608,6 +647,9 @@ function am_render_members_page() {
     ?>
     <div class="wrap am-members">
         <h1><?php _e( 'Member List', 'am' ); ?></h1>
+        <?php if ( ! empty( $_GET['trashed'] ) ) : ?>
+            <div class="notice notice-success is-dismissible"><p><?php _e( 'Moved to trash.', 'am' ); ?></p></div>
+        <?php endif; ?>
         <p class="am-stats" id="am-stats"></p>
 
         <div class="am-toolbar">
@@ -630,6 +672,19 @@ function am_render_members_page() {
             <thead></thead>
             <tbody></tbody>
         </table>
+
+        <?php
+        $trash = [];
+        foreach ( [ 'am_property' => __( 'Properties (%d)', 'am' ), 'am_person' => __( 'Owners (%d)', 'am' ) ] as $type => $label ) {
+            $count = (int) wp_count_posts( $type )->trash;
+            if ( $count ) {
+                $trash[] = '<a href="' . esc_url( admin_url( "edit.php?post_type={$type}&post_status=trash" ) ) . '">' . esc_html( sprintf( $label, $count ) ) . '</a>';
+            }
+        }
+        if ( $trash ) {
+            echo '<p class="am-trash">' . esc_html__( 'Trash', 'am' ) . ': ' . implode( ' · ', $trash ) . '</p>';
+        }
+        ?>
     </div>
     <?php
 }

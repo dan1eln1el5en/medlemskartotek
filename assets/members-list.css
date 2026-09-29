@@ -26,3 +26,4 @@
 .am-members .am-co { color: #50575e; }
 .am-members .am-missing { color: #b32d2e; font-style: italic; }
 .am-members .am-row-warning td:first-child { box-shadow: inset 3px 0 0 #dba617; }
+.am-members .am-trash { margin-top: 12px; color: #50575e; }

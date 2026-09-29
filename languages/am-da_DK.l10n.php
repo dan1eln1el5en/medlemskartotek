@@ -68,4 +68,9 @@ return ['domain'=>'am','language'=>'da_DK','plural-forms'=>'nplurals=2; plural=(
 	'Updated property "%s" (owner refreshed).' => 'Opdaterede grund "%s" (grundejer opdateret).',
 	'View' => 'Visning',
 	'members' => 'medlemsliste',
+	'← Back to member list' => '← Tilbage til medlemslisten',
+	'Moved to trash.' => 'Flyttet til papirkurven.',
+	'Properties (%d)' => 'Grunde (%d)',
+	'Owners (%d)' => 'Grundejere (%d)',
+	'Trash' => 'Papirkurv',
 ]];

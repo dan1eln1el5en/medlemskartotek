@@ -25,7 +25,7 @@
 		get( k, d ) { try { return localStorage.getItem( 'amMembers.' + k ) || d; } catch ( e ) { return d; } },
 		set( k, v ) { try { localStorage.setItem( 'amMembers.' + k, v ); } catch ( e ) {} },
 	};
-	let view = store.get( 'view', 'property' );
+	let view = D.view || store.get( 'view', 'property' );
 	let sortKey = 'property';
 	let sortDir = 1;
 
@@ -102,6 +102,22 @@
 			lines( [ tel( o.phone ), tel( o.co_phone ) ] ),
 			[ addressOf( o ) ],
 		];
+	}
+
+	/* ---- Keep URL and the admin menu (Properties / Owners) in step with the view ---- */
+	function syncMenu() {
+		const url = new URL( location.href );
+		url.searchParams.set( 'view', view );
+		url.searchParams.delete( 'trashed' );
+		history.replaceState( null, '', url );
+		document.querySelectorAll( '#toplevel_page_am_members .wp-submenu li' ).forEach( ( li ) => {
+			const a = li.querySelector( 'a' );
+			const href = ( a && a.getAttribute( 'href' ) ) || '';
+			if ( ! /page=am_members(&|$)/.test( href ) ) { return; }
+			const on = ( view === 'owner' ) === /view=owner/.test( href );
+			li.classList.toggle( 'current', on );
+			a.classList.toggle( 'current', on );
+		} );
 	}
 
 	/* ---- Render ---- */
@@ -222,12 +238,14 @@
 			store.set( 'view', view );
 			sortKey = view === 'owner' ? 'owner' : 'property';
 			sortDir = 1;
+			syncMenu();
 			render();
 		} );
 	} );
 	search.addEventListener( 'input', () => { notice.hidden = true; render(); } );
 
 	renderStats();
+	syncMenu();
 	render();
 	search.focus();
 }() );
