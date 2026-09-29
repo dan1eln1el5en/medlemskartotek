@@ -2,7 +2,7 @@
 /*
 Plugin Name: Members Manager – Summer‑House Edition (Owner‑Private‑Address)
 Description: Tracks summer‑houses (unique property names) and their owners. Includes a searchable member list with e‑mail copy and Excel export.
-Version: 1.7
+Version: 1.8
 Author: Daniel (with Lumo help)
 Text Domain: am
 Domain Path: /languages
@@ -602,7 +602,7 @@ function am_members_assets( $hook ) {
     if ( 'toplevel_page_am_members' !== $hook ) { return; }
 
     $url = plugin_dir_url( __FILE__ ) . 'assets/';
-    $ver = '1.7';
+    $ver = '1.8';
     wp_enqueue_style( 'am-members', $url . 'members-list.css', [], $ver );
     wp_enqueue_script( 'am-members', $url . 'members-list.js', [], $ver, true );
 
@@ -610,8 +610,9 @@ function am_members_assets( $hook ) {
     $data = [
         'owners'     => array_values( am_get_owners() ),
         'properties' => am_get_properties(),
-        'view'       => in_array( $view, [ 'property', 'owner' ], true ) ? $view : '',
+        'view'       => in_array( $view, [ 'property', 'owner', 'map' ], true ) ? $view : '',
         'editUrl'    => admin_url( 'post.php?action=edit&post=' ),
+        'mapUrl'     => $url . 'map-data.json?ver=' . $ver,
         'i18n'       => [
             'property'        => __( 'Property', 'am' ),
             'owner'           => __( 'Owner', 'am' ),
@@ -634,6 +635,13 @@ function am_members_assets( $hook ) {
             'copyFailed'      => __( 'Could not copy automatically. Select the addresses below and copy them:', 'am' ),
             'noEmails'        => __( 'No e‑mail addresses in the current list.', 'am' ),
             'fileName'        => __( 'members', 'am' ),
+            'map'             => __( 'Map', 'am' ),
+            'mapHint'         => __( 'Hover over a property to see the owner – click to open.', 'am' ),
+            'mapError'        => __( 'Could not load the map.', 'am' ),
+            'mapSource'       => __( 'Map: Matriklen, Dataforsyningen (CC BY 4.0)', 'am' ),
+            'legendOwned'     => __( 'Has owner', 'am' ),
+            'legendNoOwner'   => __( 'No owner registered', 'am' ),
+            'legendUnknown'   => __( 'Not in the member list', 'am' ),
         ],
     ];
     wp_add_inline_script( 'am-members', 'window.amMembers = ' . wp_json_encode( $data ) . ';', 'before' );
@@ -656,6 +664,7 @@ function am_render_members_page() {
             <span class="am-view-toggle" role="group" aria-label="<?php esc_attr_e( 'View', 'am' ); ?>">
                 <button type="button" class="button" data-view="property"><?php _e( 'Per property', 'am' ); ?></button>
                 <button type="button" class="button" data-view="owner"><?php _e( 'Per owner', 'am' ); ?></button>
+                <button type="button" class="button" data-view="map"><?php _e( 'Map', 'am' ); ?></button>
             </span>
             <input type="search" id="am-search" class="am-search"
                    placeholder="<?php esc_attr_e( 'Search name, property, e‑mail, phone…', 'am' ); ?>">
@@ -672,6 +681,7 @@ function am_render_members_page() {
             <thead></thead>
             <tbody></tbody>
         </table>
+        <div class="am-map" id="am-map" hidden></div>
 
         <?php
         $trash = [];

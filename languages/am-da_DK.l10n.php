@@ -73,4 +73,11 @@ return ['domain'=>'am','language'=>'da_DK','plural-forms'=>'nplurals=2; plural=(
 	'Properties (%d)' => 'Grunde (%d)',
 	'Owners (%d)' => 'Grundejere (%d)',
 	'Trash' => 'Papirkurv',
+	'Map' => 'Kort',
+	'Hover over a property to see the owner – click to open.' => 'Hold musen over en grund for at se grundejeren – klik for at åbne.',
+	'Could not load the map.' => 'Kortet kunne ikke indlæses.',
+	'Map: Matriklen, Dataforsyningen (CC BY 4.0)' => 'Kort: Matriklen, Dataforsyningen (CC BY 4.0)',
+	'Has owner' => 'Har grundejer',
+	'No owner registered' => 'Ingen grundejer registreret',
+	'Not in the member list' => 'Ikke i medlemslisten',
 ]];

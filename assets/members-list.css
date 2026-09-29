@@ -27,3 +27,34 @@
 .am-members .am-missing { color: #b32d2e; font-style: italic; }
 .am-members .am-row-warning td:first-child { box-shadow: inset 3px 0 0 #dba617; }
 .am-members .am-trash { margin-top: 12px; color: #50575e; }
+
+/* Map view */
+.am-members .am-map .description { margin: 0 0 8px; }
+.am-members .am-map-frame { position: relative; background: #f6f4ee; border: 1px solid #c3c4c7; }
+.am-members .am-map-svg { display: block; width: 100%; height: auto; max-height: 78vh; }
+.am-members .am-map-context { fill: #ebe8df; stroke: #fff; stroke-width: 0.8; }
+.am-members .am-map-road { fill: none; stroke: #fff; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+.am-members .am-map-plot { stroke: #fff; stroke-width: 1.2; cursor: pointer; transition: opacity .15s; outline: none; }
+.am-members .am-map-plot.is-owned { fill: #9fcf94; }
+.am-members .am-map-plot.is-no-owner { fill: #f2cf6b; }
+.am-members .am-map-plot.is-unknown { fill: #d5d8dc; }
+.am-members .am-map-plot:hover,
+.am-members .am-map-plot:focus-visible { stroke: #2271b1; stroke-width: 2.5; }
+.am-members .am-map-plot.is-hit { stroke: #2271b1; stroke-width: 2; }
+.am-members .am-map-plot.is-dimmed { opacity: .3; }
+.am-members .am-map-label { font: 600 7px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #1d2327; text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
+.am-members .am-map-roadname { font: italic 8px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #646970; text-anchor: middle; dominant-baseline: middle; pointer-events: none; paint-order: stroke; stroke: #fff; stroke-width: 2px; }
+.am-members .am-map-tip {
+	position: absolute; z-index: 2; max-width: 280px; padding: 8px 10px; pointer-events: none;
+	background: #fff; border: 1px solid #c3c4c7; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,.15);
+	line-height: 1.5;
+}
+.am-members .am-map-tip strong { display: block; }
+.am-members .am-map-tip strong ~ strong { margin-top: 6px; }
+.am-members .am-map-tip-sub { color: #50575e; }
+.am-members .am-map-legend { display: flex; flex-wrap: wrap; gap: 16px; margin: 8px 0 0; }
+.am-members .am-map-key i { display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: -1px; border-radius: 2px; }
+.am-members .am-map-key.is-owned i { background: #9fcf94; }
+.am-members .am-map-key.is-no-owner i { background: #f2cf6b; }
+.am-members .am-map-key.is-unknown i { background: #d5d8dc; }
+.am-members .am-map-source { margin: 4px 0 0; font-size: 11px; color: #646970; }
