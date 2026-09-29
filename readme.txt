@@ -1,4 +1,4 @@
-=== Medlems Manager ===
+=== Stenøgård Medlems Manager ===
 Contributors: daniel
 Version: 1.0
 License: GPLv2 or later

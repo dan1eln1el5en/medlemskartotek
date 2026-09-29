@@ -1,17 +1,16 @@
 <?php
 /*
 Plugin Name: Members Manager – Summer‑House Edition (Owner‑Private‑Address)
-Description: Tracks summer‑houses (identified by a unique property name) and their owners. Owner records store the private residential address.
-Version: 1.3
+Description: Tracks summer‑houses (unique property names) and their owners. Includes admin list and e‑mail export.
+Version: 1.4
 Author: Daniel (with Lumo help)
 */
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-/* ------------------------------------------------------------------
-   1️⃣ POST TYPES
-------------------------------------------------------------------- */
-// 1️⃣ Property – each summer‑house (unique name from column 0)
+/* --------------------------------------------------------------
+   1️⃣ POST TYPES (unchanged)
+-------------------------------------------------------------- */
 function am_register_property_cpt() {
     $labels = [
         'name'          => __( 'Properties', 'am' ),
@@ -24,7 +23,7 @@ function am_register_property_cpt() {
         'public'        => false,
         'show_ui'       => true,
         'capability_type'=> 'post',
-        'supports'      => [ 'title' ], // title = unique property name (e.g. KT1, SV15)
+        'supports'      => [ 'title' ],
         'menu_position' => 20,
         'menu_icon'     => 'dashicons-admin-home',
     ];
@@ -32,7 +31,6 @@ function am_register_property_cpt() {
 }
 add_action( 'init', 'am_register_property_cpt' );
 
-// 2️⃣ Owner – one record per person (stores private address)
 function am_register_person_cpt() {
     $labels = [
         'name'          => __( 'Owners', 'am' ),
@@ -45,7 +43,7 @@ function am_register_person_cpt() {
         'public'        => false,
         'show_ui'       => true,
         'capability_type'=> 'post',
-        'supports'      => [ 'title' ], // title = "First Last"
+        'supports'      => [ 'title' ],
         'menu_position' => 21,
         'menu_icon'     => 'dashicons-id-alt',
     ];
@@ -54,9 +52,9 @@ function am_register_person_cpt() {
 add_action( 'init', 'am_register_person_cpt' );
 
 
-/* ------------------------------------------------------------------
-   2️⃣ PROPERTY METABOX (link to owner)
-------------------------------------------------------------------- */
+/* --------------------------------------------------------------
+   2️⃣ METABOXES (property ↔ owner, owner private address)
+-------------------------------------------------------------- */
 function am_property_meta_boxes() {
     add_meta_box(
         'am_prop_details',
@@ -71,10 +69,8 @@ add_action( 'add_meta_boxes', 'am_property_meta_boxes' );
 
 function am_render_property_meta( $post ) {
     wp_nonce_field( 'am_save_prop', 'am_prop_nonce' );
-
     $owner_id = get_post_meta( $post->ID, '_am_owner_id', true );
 
-    // Owner dropdown (list all owners)
     $owners = get_posts( [
         'post_type'      => 'am_person',
         'posts_per_page' => -1,
@@ -96,10 +92,6 @@ function am_render_property_meta( $post ) {
     </p>
     <?php
 }
-
-/* ------------------------------------------------------------------
-   3️⃣ SAVE PROPERTY (store owner link)
-------------------------------------------------------------------- */
 function am_save_property_meta( $post_id ) {
     if ( ! isset( $_POST['am_prop_nonce'] ) ||
          ! wp_verify_nonce( $_POST['am_prop_nonce'], 'am_save_prop' ) ) {
@@ -113,10 +105,6 @@ function am_save_property_meta( $post_id ) {
 }
 add_action( 'save_post_am_property', 'am_save_property_meta' );
 
-
-/* ------------------------------------------------------------------
-   4️⃣ OWNER METABOX (private address fields)
-------------------------------------------------------------------- */
 function am_person_meta_boxes() {
     add_meta_box(
         'am_person_details',
@@ -147,7 +135,7 @@ function am_render_person_meta( $post ) {
         <input type="text" name="am_phone" value="<?php echo esc_attr( $phone ); ?>" style="width:100%;">
     </p>
     <hr/>
-    <p><strong><?php _e( 'Private Residential Address (where the owner officially lives)', 'am' ); ?></strong></p>
+    <p><strong><?php _e( 'Private Residential Address (official residence)', 'am' ); ?></strong></p>
     <p>
         <label><?php _e( 'Street:', 'am' ); ?></label> 
         <input type="text" name="am_private_street" value="<?php echo esc_attr( $addr_str ); ?>" style="width:100%;">
@@ -185,9 +173,9 @@ function am_save_person_meta( $post_id ) {
 add_action( 'save_post_am_person', 'am_save_person_meta' );
 
 
-/* ------------------------------------------------------------------
-   5️⃣ ADMIN PAGE – CSV IMPORT
-------------------------------------------------------------------- */
+/* --------------------------------------------------------------
+   3️⃣ CSV IMPORT (unchanged – keep the same function from v1.3)
+-------------------------------------------------------------- */
 function am_import_menu() {
     add_submenu_page(
         'edit.php?post_type=am_property',
@@ -216,7 +204,6 @@ function am_render_import_page() {
         </form>
 
         <?php
-        // Process the upload if the form was submitted
         if ( isset( $_POST['am_import_nonce'] )
             && wp_verify_nonce( $_POST['am_import_nonce'], 'am_import_csv' )
             && ! empty( $_FILES['am_csv_file']['tmp_name'] ) ) {
@@ -234,42 +221,22 @@ function am_render_import_page() {
     <?php
 }
 
-/* ------------------------------------------------------------------
-   6️⃣ CSV PARSER & IMPORT LOGIC
-------------------------------------------------------------------- */
+/* ---- CSV parser – unchanged from the previous version ---- */
 function am_process_csv( $filepath ) {
     $handle = fopen( $filepath, 'r' );
     if ( ! $handle ) {
         return [ 'Unable to open the uploaded file.' ];
     }
 
-    $log     = [];
-    $row_num = 0;
-
+    $log = []; $row_num = 0;
     while ( ( $raw = fgets( $handle ) ) !== false ) {
         $row_num++;
-
-        // Skip pure separator lines (lots of semicolons)
         if ( preg_match( '/^;+$/', trim( $raw ) ) ) { continue; }
 
-        // Split on semicolon, keep empty fields
         $cols = str_getcsv( $raw, ';' );
         $cols = array_map( 'trim', $cols );
-
-        // Ignore completely empty rows
         if ( count( array_filter( $cols ) ) === 0 ) { continue; }
 
-        /* -------------------------------------------------
-           Mapping based on your latest description
-           0 = Unique property name (e.g. KT1, SV15)   → Property title
-           1 = Owner first name
-           2 = Owner last name
-           4 = Owner private street (official residence)
-           5 = Owner email
-           6 = Owner private postcode
-           7 = Owner private city
-           8 = Owner private phone (optional)
-        ------------------------------------------------- */
         $prop_name   = $cols[0] ?? '';
         $first_name  = $cols[1] ?? '';
         $last_name   = $cols[2] ?? '';
@@ -279,17 +246,15 @@ function am_process_csv( $filepath ) {
         $priv_city   = $cols[7] ?? '';
         $priv_phone  = $cols[8] ?? '';
 
-        // Basic sanity check
         if ( empty( $prop_name ) ) {
             $log[] = "Row {$row_num}: skipped (no property name).";
             continue;
         }
 
-        // ------- 1️⃣ FIND OR CREATE OWNER -------
+        // ----- Owner -----
         $owner_full = trim( $first_name . ' ' . $last_name );
         $owner_id   = null;
 
-        // Prefer lookup by e‑mail (most reliable)
         if ( $email ) {
             $found = get_posts( [
                 'post_type'      => 'am_person',
@@ -301,7 +266,6 @@ function am_process_csv( $filepath ) {
             if ( $found ) { $owner_id = $found[0]; }
         }
 
-        // Fallback: lookup by full name
         if ( ! $owner_id && $owner_full ) {
             $found = get_posts( [
                 'post_type' => 'am_person',
@@ -312,7 +276,6 @@ function am_process_csv( $filepath ) {
             if ( $found ) { $owner_id = $found[0]; }
         }
 
-        // If still not found, create a new owner record
         if ( ! $owner_id ) {
             $owner_id = wp_insert_post( [
                 'post_type'   => 'am_person',
@@ -329,8 +292,7 @@ function am_process_csv( $filepath ) {
             }
         }
 
-        // ------- 2️⃣ CREATE / UPDATE PROPERTY -------
-        // Check if a property with this exact name already exists (avoid duplicates)
+        // ----- Property -----
         $existing = get_posts( [
             'post_type'      => 'am_property',
             'title'          => $prop_name,
@@ -340,9 +302,8 @@ function am_process_csv( $filepath ) {
 
         if ( $existing ) {
             $prop_id = $existing[0];
-            // Update owner link if needed
             update_post_meta( $prop_id, '_am_owner_id', $owner_id );
-            $log[] = "Updated property '{$prop_name}' (owner link refreshed).";
+            $log[] = "Updated property '{$prop_name}' (owner refreshed).";
         } else {
             $prop_id = wp_insert_post( [
                 'post_type'   => 'am_property',
@@ -357,7 +318,193 @@ function am_process_csv( $filepath ) {
             }
         }
     }
-
     fclose( $handle );
     return $log;
+}
+
+/* --------------------------------------------------------------
+   4️⃣ NEW ADMIN PAGES
+      • All Data (combined view)
+      • Export Emails (CSV download)
+-------------------------------------------------------------- */
+
+/* ---- Sub‑menu registration ---- */
+function am_admin_pages() {
+    // All Data page
+    add_submenu_page(
+        'edit.php?post_type=am_property',
+        __( 'All Data', 'am' ),
+        __( 'All Data', 'am' ),
+        'manage_options',
+        'am_all_data',
+        'am_render_all_data_page'
+    );
+
+    // Export Emails page
+    add_submenu_page(
+        'edit.php?post_type=am_property',
+        __( 'Export Emails', 'am' ),
+        __( 'Export Emails', 'am' ),
+        'manage_options',
+        'am_export_emails',
+        'am_render_export_emails_page'
+    );
+}
+add_action( 'admin_menu', 'am_admin_pages' );
+
+/* ---- Helper: fetch all property‑owner rows ---- */
+function am_get_combined_rows() {
+    $rows = [];
+
+    $properties = get_posts( [
+        'post_type'      => 'am_property',
+        'posts_per_page' => -1,
+        'post_status'    => 'publish',
+        'orderby'        => 'title',
+        'order'          => 'ASC',
+    ] );
+
+    foreach ( $properties as $prop ) {
+        $owner_id = get_post_meta( $prop->ID, '_am_owner_id', true );
+        $owner    = $owner_id ? get_post( $owner_id ) : null;
+
+        $rows[] = [
+            'property_name' => $prop->post_title,
+            'owner_name'    => $owner ? $owner->post_title : '',
+            'email'         => $owner ? get_post_meta( $owner->ID, '_am_email', true ) : '',
+            'phone'         => $owner ? get_post_meta( $owner->ID, '_am_phone', true ) : '',
+            'street'        => $owner ? get_post_meta( $owner->ID, '_am_private_street', true ) : '',
+            'postcode'      => $owner ? get_post_meta( $owner->ID, '_am_private_postcode', true ) : '',
+            'city'          => $owner ? get_post_meta( $owner->ID, '_am_private_city', true ) : '',
+            'owner_id'      => $owner ? $owner->ID : 0,
+        ];
+    }
+
+    return $rows;
+}
+
+/* ---- All Data page (HTML table) ---- */
+function am_render_all_data_page() {
+    if ( ! current_user_can( 'manage_options' ) ) {
+        wp_die( __( 'Insufficient permissions.', 'am' ) );
+    }
+
+    $rows = am_get_combined_rows();
+    ?>
+    <div class="wrap">
+        <h1><?php _e( 'All Summer‑House Data', 'am' ); ?></h1>
+        <style>
+            .am-table { width:100%; border-collapse:collapse; margin-top:20px; }
+            .am-table th, .am-table td { border:1px solid #ddd; padding:8px; }
+            .am-table th { background:#f1f1f1; text-align:left; }
+        </style>
+        <table class="am-table">
+            <thead>
+                <tr>
+                    <th><?php _e( 'Property', 'am' ); ?></th>
+                    <th><?php _e( 'Owner', 'am' ); ?></th>
+                    <th><?php _e( 'E‑mail', 'am' ); ?></th>
+                    <th><?php _e( 'Phone', 'am' ); ?></th>
+                    <th><?php _e( 'Private Street', 'am' ); ?></th>
+                    <th><?php _e( 'Postcode', 'am' ); ?></th>
+                    <th><?php _e( 'City', 'am' ); ?></th>
+                    <th class="am-edit-link"><?php _e( 'Edit Owner', 'am' ); ?></th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ( $rows as $row ) : ?>
+                    <tr>
+                        <td><?php echo esc_html( $row['property_name'] ); ?></td>
+                        <td><?php echo esc_html( $row['owner_name'] ); ?></td>
+                        <td><?php echo esc_html( $row['email'] ); ?></td>
+                        <td><?php echo esc_html( $row['phone'] ); ?></td>
+                        <td><?php echo esc_html( $row['street'] ); ?></td>
+                        <td><?php echo esc_html( $row['postcode'] ); ?></td>
+                        <td><?php echo esc_html( $row['city'] ); ?></td>
+                        <!-- Edit‑owner column -->
+                        <td class="am-edit-link">
+                            <?php if ( $row['owner_id'] ) : ?>
+                                <a href="<?php echo esc_url(
+                                    admin_url( 'post.php?post=' . $row['owner_id'] . '&action=edit' )
+                                ); ?>" title="<?php esc_attr_e( 'Edit this owner', 'am' ); ?>">
+                                    &#9998; <!-- Unicode pencil -->
+                                </a>
+                            <?php else : ?>
+                                <?php _e( '—', 'am' ); ?>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+    <?php
+}
+
+/* --------------------------------------------------------------
+   5️⃣ EXPORT EMAILS PAGE
+-------------------------------------------------------------- */
+function am_render_export_emails_page() {
+    if ( ! current_user_can( 'manage_options' ) ) {
+        wp_die( __( 'Insufficient permissions.', 'am' ) );
+    }
+
+    // If the user clicked “Download CSV”, generate and send it.
+    if ( isset( $_POST['am_download_emails'] )
+        && check_admin_referer( 'am_export_emails', 'am_export_nonce' ) ) {
+
+        $emails = am_collect_unique_emails();
+
+        // Prepare CSV content
+        $csv_output = "email\r\n";
+        foreach ( $emails as $email ) {
+            $csv_output .= $email . "\r\n";
+        }
+
+        // Send headers for download
+        header( 'Content-Type: text/csv; charset=utf-8' );
+        header( 'Content-Disposition: attachment; filename=owner-emails-' . date( 'Ymd' ) . '.csv' );
+        echo $csv_output;
+        exit; // stop further output
+    }
+
+    // Otherwise, show the button + a quick stats box
+    $total_emails = count( am_collect_unique_emails() );
+    ?>
+    <div class="wrap">
+        <h1><?php _e( 'Export Owner E‑mail Addresses', 'am' ); ?></h1>
+
+        <p><?php printf(
+            /* translators: %d = number of distinct e‑mail addresses */
+            __( 'There are currently %d unique e‑mail addresses in the system.', 'am' ),
+            $total_emails
+        ); ?></p>
+
+        <form method="post">
+            <?php wp_nonce_field( 'am_export_emails', 'am_export_nonce' ); ?>
+            <?php submit_button( __( 'Download CSV', 'am' ), 'primary', 'am_download_emails' ); ?>
+        </form>
+    </div>
+    <?php
+}
+
+/* ---- Helper: gather unique e‑mail addresses ---- */
+function am_collect_unique_emails() {
+    $emails = [];
+
+    $owners = get_posts( [
+        'post_type'      => 'am_person',
+        'posts_per_page' => -1,
+        'post_status'    => 'publish',
+        'fields'         => 'ids',
+    ] );
+
+    foreach ( $owners as $owner_id ) {
+        $email = get_post_meta( $owner_id, '_am_email', true );
+        if ( $email && ! in_array( $email, $emails, true ) ) {
+            $emails[] = $email;
+        }
+    }
+
+    return $emails;
 }
