@@ -1,6 +1,6 @@
 === Stenøgård Medlems Manager ===
 Contributors: daniel
-Version: 1.5
+Version: 1.6
 License: GPLv2 or later
 Description: Admin interface for grunde (properties) and grundejere (owners) in grundejerforeningen Stenøgård.
 Custom plugin skrevet af Daniel L. Nielsen for grundejerforeningen Stenøgård
@@ -14,7 +14,15 @@ Custom plugin skrevet af Daniel L. Nielsen for grundejerforeningen Stenøgård
 * Admin language follows each user's profile language (English / Danish).
   Danish strings: languages/am-da_DK.l10n.php
 
+== Updates from GitHub ==
+The site gets updates from https://github.com/dan1eln1el5en/medlemskartotek via the
+Git Updater plugin (git-updater.com). To release a new version: raise "Version:" in
+medlemskartotek.php, commit and push to main. The update then shows under Plugins.
+
 == Changelog ==
+= 1.6 =
+* Updates can be installed from GitHub via Git Updater.
+
 = 1.5 =
 * New Member List page (replaces "All Data" and "Export Emails").
 * Co-owner fields on owners.
